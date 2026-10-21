@@ -1,6 +1,7 @@
 /**
  * NIGHTWATCH — Native SVG Charting Library
  * Zero-dependency, offline-first visualization engine for histograms, donuts, and bars.
+ * White & Blue Theme Edition.
  */
 
 window.NightwatchCharts = {
@@ -16,21 +17,21 @@ window.NightwatchCharts = {
     const rect = container.getBoundingClientRect();
     const width = rect.width || 600;
     const height = rect.height || 100;
-    const padding = { top: 10, bottom: 20, left: 10, right: 10 };
+    const padding = { top: 10, bottom: 22, left: 10, right: 10 };
 
     const maxCount = Math.max(...buckets.map(b => b.count), 1);
     const plotWidth = width - padding.left - padding.right;
     const plotHeight = height - padding.top - padding.bottom;
-    const barWidth = Math.max(2, (plotWidth / buckets.length) - 2);
+    const barWidth = Math.max(3, (plotWidth / buckets.length) - 2);
 
     let barsSvg = '';
     buckets.forEach((b, i) => {
       const x = padding.left + (i * (plotWidth / buckets.length));
-      const barH = (b.count / maxCount) * plotHeight;
+      const barH = Math.max(2, (b.count / maxCount) * plotHeight);
       const y = padding.top + (plotHeight - barH);
 
       barsSvg += `
-        <rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="2" fill="#06B6D4" opacity="0.85">
+        <rect x="${x}" y="${y}" width="${barWidth}" height="${barH}" rx="2" fill="#2563EB" opacity="0.85">
           <title>${b.time}: ${b.count} events</title>
         </rect>
       `;
@@ -41,10 +42,10 @@ window.NightwatchCharts = {
 
     container.innerHTML = `
       <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
-        <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#26334D" stroke-width="1" />
+        <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#CBD5E1" stroke-width="1" />
         ${barsSvg}
-        <text x="${padding.left}" y="${height - 4}" fill="#64748B" font-size="10" font-family="monospace">${startTime}</text>
-        <text x="${width - padding.right}" y="${height - 4}" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">${endTime}</text>
+        <text x="${padding.left}" y="${height - 6}" fill="#64748B" font-size="10" font-family="monospace" font-weight="500">${startTime}</text>
+        <text x="${width - padding.right}" y="${height - 6}" fill="#64748B" font-size="10" font-family="monospace" font-weight="500" text-anchor="end">${endTime}</text>
       </svg>
     `;
   },
@@ -64,14 +65,14 @@ window.NightwatchCharts = {
     const defaultColors = {
       critical: '#EF4444',
       high: '#F59E0B',
-      medium: '#3B82F6',
+      medium: '#2563EB',
       low: '#10B981',
       info: '#64748B',
-      linux_auth: '#6366F1',
-      suricata_eve: '#EC4899',
-      winevt: '#06B6D4',
-      syslog: '#10B981',
-      json: '#F59E0B'
+      linux_auth: '#3B82F6',
+      suricata_eve: '#8B5CF6',
+      winevt: '#0284C7',
+      syslog: '#059669',
+      json: '#D97706'
     };
 
     const size = 130;
@@ -105,9 +106,9 @@ window.NightwatchCharts = {
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="width:8px;height:8px;border-radius:2px;background-color:${color};"></span>
-            <span style="color:var(--text-muted);text-transform:capitalize;">${key}</span>
+            <span style="color:var(--text-muted);text-transform:capitalize;font-weight:500;">${key}</span>
           </div>
-          <span style="font-family:monospace;font-weight:600;color:#FFFFFF;">${val} (${pct}%)</span>
+          <span style="font-family:monospace;font-weight:700;color:var(--text-main);">${val} (${pct}%)</span>
         </div>
       `;
     });
@@ -120,8 +121,8 @@ window.NightwatchCharts = {
             ${circlesSvg}
           </svg>
           <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-            <span style="font-size:18px;font-weight:700;font-family:monospace;color:#FFFFFF;">${total}</span>
-            <span style="font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.5px;">Events</span>
+            <span style="font-size:18px;font-weight:800;font-family:monospace;color:var(--text-main);letter-spacing:-0.5px;">${total}</span>
+            <span style="font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.5px;font-weight:600;">Events</span>
           </div>
         </div>
         <div style="flex:1;">${legendHtml}</div>
@@ -139,7 +140,7 @@ window.NightwatchCharts = {
     }
 
     const maxVal = Math.max(...items.map(it => it[valueKey] || 0), 1);
-    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
 
     items.slice(0, 5).forEach(it => {
       const label = it[labelKey] || 'unknown';
@@ -147,13 +148,13 @@ window.NightwatchCharts = {
       const pct = Math.round((val / maxVal) * 100);
 
       html += `
-        <div style="display:flex;flex-direction:column;gap:2px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
           <div style="display:flex;justify-content:space-between;font-size:12px;font-family:monospace;">
-            <span style="color:var(--text-main);">${label}</span>
-            <span style="color:var(--accent-cyan);font-weight:600;">${val}</span>
+            <span style="color:var(--text-main);font-weight:500;">${label}</span>
+            <span style="color:var(--accent-primary);font-weight:700;">${val}</span>
           </div>
-          <div style="height:6px;background-color:var(--bg-input);border-radius:3px;overflow:hidden;">
-            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg, var(--accent-indigo), var(--accent-cyan));border-radius:3px;"></div>
+          <div style="height:6px;background-color:#E2E8F0;border-radius:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg, #3B82F6, #1D4ED8);border-radius:3px;"></div>
           </div>
         </div>
       `;

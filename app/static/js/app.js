@@ -125,7 +125,7 @@ const NW = {
       tbody.innerHTML = alerts.map(a => `
         <tr onclick="NW.openAlertModal('${a.id}')">
           <td><span class="badge-sev badge-sev-${a.severity}">${a.severity}</span></td>
-          <td style="font-weight:600;color:#FFFFFF;">${a.rule_name}</td>
+          <td style="font-weight:600;color:var(--text-main);">${a.rule_name}</td>
           <td style="color:var(--text-muted);">${a.description}</td>
           <td><span class="badge-status status-${a.status}">${a.status}</span></td>
           <td style="color:var(--text-dim);">${a.triggered_at.substring(11, 19)}</td>
@@ -330,7 +330,7 @@ const NW = {
       tbody.innerHTML = alerts.map(a => `
         <tr onclick="NW.openAlertModal('${a.id}')">
           <td><span class="badge-sev badge-sev-${a.severity}">${a.severity}</span></td>
-          <td style="font-weight:600;color:#FFFFFF;">${a.rule_name}</td>
+          <td style="font-weight:600;color:var(--text-main);">${a.rule_name}</td>
           <td>${a.description}</td>
           <td><span class="badge-status status-${a.status}">${a.status}</span></td>
           <td style="font-family:monospace;color:var(--accent-cyan);font-weight:600;">${a.event_count}</td>
@@ -355,7 +355,7 @@ const NW = {
       tbody.innerHTML = rules.map(r => `
         <tr>
           <td><input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="NW.toggleRule('${r.id}', this.checked)"></td>
-          <td style="font-weight:600;color:#FFFFFF;">${r.name}</td>
+          <td style="font-weight:600;color:var(--text-main);">${r.name}</td>
           <td><span class="badge-sev badge-sev-${r.severity}">${r.severity}</span></td>
           <td style="font-family:monospace;">${r.rule_type}</td>
           <td style="font-family:monospace;">${r.threshold || '-'}</td>
@@ -407,7 +407,7 @@ const NW = {
 
       tbody.innerHTML = inputs.map(inp => `
         <tr>
-          <td style="font-weight:600;color:#FFFFFF;">${inp.id}</td>
+          <td style="font-weight:600;color:var(--text-main);">${inp.id}</td>
           <td style="font-family:monospace;color:var(--accent-cyan);">${inp.path}</td>
           <td><span class="badge-status status-investigating">${inp.sourcetype}</span></td>
           <td>${inp.index}</td>
@@ -485,7 +485,7 @@ const NW = {
         if (tbody) {
           tbody.innerHTML = list.map(s => `
             <tr>
-              <td style="font-weight:600;color:#FFFFFF;">${s.name}</td>
+              <td style="font-weight:600;color:var(--text-main);">${s.name}</td>
               <td style="font-family:monospace;color:var(--accent-cyan);cursor:pointer;" onclick="NW.setQuery('${this.escapeHtml(s.query)}')">${this.escapeHtml(s.query)}</td>
               <td style="color:var(--text-muted);">${s.description || '-'}</td>
               <td>${s.run_count}</td>

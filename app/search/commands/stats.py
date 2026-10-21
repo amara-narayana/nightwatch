@@ -4,7 +4,7 @@ Computes aggregations (count, sum, avg, min, max, dc, values) grouped by specifi
 """
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from app.search.ast_nodes import AggregationSpec
 
 

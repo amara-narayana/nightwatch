@@ -200,7 +200,7 @@
     <section id="view-alerts" class="nw-view">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Security Incidents & Detections</h2>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text-main);">Security Incidents & Detections</h2>
           <p style="color:var(--text-muted);font-size:12px;">Evidence-backed security detections evaluated across local log streams.</p>
         </div>
         <button class="nw-btn nw-btn-primary nw-btn-sm" onclick="NW.triggerDetectionCycle()">Evaluate Rules Now</button>
@@ -259,7 +259,7 @@
     <section id="view-inputs" class="nw-view">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Data Ingestion & Log Sources</h2>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text-main);">Data Ingestion & Log Sources</h2>
           <p style="color:var(--text-muted);font-size:12px;">Persistent file monitoring, byte offsets, and ingestion checkpoint registry.</p>
         </div>
         <div style="display:flex;gap:10px;">
@@ -295,7 +295,7 @@
 
     <!-- 5. SAVED SEARCHES & HISTORY VIEW -->
     <section id="view-saved_searches" class="nw-view">
-      <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Saved Searches & Query History</h2>
+      <h2 style="font-size:18px;font-weight:700;color:var(--text-main);">Saved Searches & Query History</h2>
 
       <div class="nw-card">
         <div class="nw-card-header">
@@ -346,7 +346,7 @@
     <section id="view-health" class="nw-view">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">System Health & Performance Telemetry</h2>
+          <h2 style="font-size:18px;font-weight:700;color:var(--text-main);">System Health & Performance Telemetry</h2>
           <p style="color:var(--text-muted);font-size:12px;">Real-time host and process metrics verified against the 8 GB / 40 GB budget.</p>
         </div>
         <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.triggerRetentionCleanup()">Run Retention Cleanup</button>
@@ -383,7 +383,7 @@
           <div style="padding:10px 0;display:flex;flex-direction:column;gap:12px;">
             <div style="display:flex;justify-content:space-between;">
               <span style="color:var(--text-muted);">Current Database Size:</span>
-              <span id="health-db-size" style="font-family:monospace;font-weight:700;color:#FFFFFF;">-</span>
+              <span id="health-db-size" style="font-family:monospace;font-weight:700;color:var(--text-main);">-</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
               <span style="color:var(--text-muted);">Storage Hard Quota:</span>
