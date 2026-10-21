@@ -10,10 +10,10 @@ from pydantic import BaseModel, Field
 
 
 class ServerConfig(BaseModel):
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8000
     log_level: str = "info"
-    cors_origins: List[str] = ["http://127.0.0.1:8000", "http://localhost:8000"]
+    cors_origins: List[str] = ["*"]
 
 
 class StorageConfig(BaseModel):

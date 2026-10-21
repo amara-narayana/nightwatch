@@ -55,3 +55,4 @@ Thumbs.db
 # Forwarder runtime data & certificates
 forwarder/certs/
 forwarder/data/
+forwarder/config/agent.json

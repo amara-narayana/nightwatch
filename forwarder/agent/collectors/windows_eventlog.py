@@ -50,6 +50,7 @@ class WindowsEventLogCollector(BaseCollector):
         self.max_events_per_poll = max_events_per_poll
 
         self.channel = self.cfg.channel
+        self._access_warned: bool = False
         self._current_cp: WindowsCheckpoint = self.checkpoint_store.get_windows_checkpoint(self.channel)
         self._pending_record_id: int = self._current_cp.last_record_id
         self._pending_timestamp: str = self._current_cp.last_timestamp
@@ -81,7 +82,9 @@ class WindowsEventLogCollector(BaseCollector):
         try:
             h_log = win32evtlog.OpenEventLog(None, self.channel)
         except Exception as e:
-            logger.warning(f"Access denied or unavailable channel '{self.channel}': {e}")
+            if not self._access_warned:
+                logger.info(f"Channel '{self.channel}' not accessible without Administrator elevation ({e}). Skipping.")
+                self._access_warned = True
             return []
 
         try:

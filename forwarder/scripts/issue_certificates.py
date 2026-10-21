@@ -276,6 +276,88 @@ def cmd_issue_agent(args) -> None:
     print(f"  CA Cert:    {out_dir / 'ca.crt'}")
 
 
+def create_agent_credentials_pem(ca_dir: Path, agent_id: str, days: int = 365) -> tuple[str, str, str]:
+    """Generates and returns (ca_cert_pem, agent_cert_pem, agent_key_pem) as strings."""
+    ca_key, ca_cert = load_ca(ca_dir)
+    agent_key = generate_rsa_key(2048)
+
+    subject = x509.Name([
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "NIGHTWATCH Endpoint"),
+        x509.NameAttribute(NameOID.COMMON_NAME, agent_id),
+    ])
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(ca_cert.subject)
+        .public_key(agent_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(minutes=5))
+        .not_valid_after(now + datetime.timedelta(days=days))
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .add_extension(
+            x509.KeyUsage(
+                digital_signature=True,
+                content_commitment=False,
+                key_encipherment=True,
+                data_encipherment=False,
+                key_agreement=False,
+                key_cert_sign=False,
+                crl_sign=False,
+                encipher_only=False,
+                decipher_only=False
+            ),
+            critical=True
+        )
+        .add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CLIENT_AUTH]), critical=False)
+        .add_extension(x509.SubjectAlternativeName([x509.DNSName(agent_id)]), critical=False)
+        .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)
+        .sign(ca_key, hashes.SHA256())
+    )
+
+    ca_pem = ca_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+    cert_pem = cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+    key_pem = agent_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    return ca_pem, cert_pem, key_pem
+
+
+def ensure_ca_and_server_certs(base_certs_dir: Path = None) -> None:
+    """Ensures Root CA and Receiver Server certificates exist, auto-generating them if missing."""
+    if base_certs_dir is None:
+        base_certs_dir = Path("forwarder/certs")
+    ca_dir = base_certs_dir / "ca"
+    server_dir = base_certs_dir / "server"
+
+    ca_key = ca_dir / "ca.key"
+    ca_crt = ca_dir / "ca.crt"
+    if not ca_key.exists() or not ca_crt.exists():
+        class MockArgs:
+            out_dir = str(ca_dir)
+            force = True
+        cmd_init_ca(MockArgs)
+
+    server_key = server_dir / "server.key"
+    server_crt = server_dir / "server.crt"
+    if not server_key.exists() or not server_crt.exists():
+        class MockServerArgs:
+            ca_dir = str(ca_dir)
+            out_dir = str(server_dir)
+            hostname = "localhost"
+            ip = ["127.0.0.1", "0.0.0.0"]
+            days = 825
+        cmd_issue_server(MockServerArgs)
+
+    # Ensure server directory has a copy of ca.crt for the receiver
+    server_ca_copy = server_dir / "ca.crt"
+    if not server_ca_copy.exists() and ca_crt.exists():
+        import shutil
+        shutil.copy2(ca_crt, server_ca_copy)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="NIGHTWATCH PKI Certificate Management Utility")
     subparsers = parser.add_subparsers(dest="command", required=True)

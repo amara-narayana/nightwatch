@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes_alerts import router as alerts_router
 from app.api.routes_events import router as events_router
+from app.api.routes_forwarder import router as forwarder_router
 from app.api.routes_inputs import router as inputs_router
 from app.api.routes_saved_searches import router as saved_searches_router
 from app.api.routes_search import router as search_router
@@ -63,6 +64,25 @@ async def lifespan(app: FastAPI):
     detection = get_detection_engine()
     detection.start()
 
+    # 6. Start NIGHTWATCH Forwarder mTLS Receiver (Port 9997)
+    receiver_server = None
+    try:
+        from forwarder.receiver.config import ReceiverConfig
+        from forwarder.receiver.tls_server import TlsReceiverServer
+        from forwarder.scripts.issue_certificates import ensure_ca_and_server_certs
+        ensure_ca_and_server_certs(Path("forwarder/certs"))
+
+        rec_cfg_file = Path("forwarder/config/receiver.test.json")
+        if rec_cfg_file.exists():
+            rec_cfg = ReceiverConfig.from_file(str(rec_cfg_file))
+            rec_cfg.resolve_paths(Path("."))
+            if Path(rec_cfg.ca_cert_path).exists() and Path(rec_cfg.server_cert_path).exists():
+                receiver_server = TlsReceiverServer(rec_cfg)
+                receiver_server.start()
+                logger.info(f"NIGHTWATCH Forwarder Receiver listening on {rec_cfg.listen_host}:{rec_cfg.listen_port}")
+    except Exception as e:
+        logger.warning(f"Forwarder Receiver auto-startup deferred: {e}")
+
     logger.info("NIGHTWATCH Real-Time Collectors initialized successfully and ready for analysis.")
     yield
 
@@ -73,6 +93,8 @@ async def lifespan(app: FastAPI):
     host_collector.stop()
     syslog_listener.stop()
     detection.stop()
+    if receiver_server:
+        receiver_server.stop()
     logger.info("NIGHTWATCH shutdown complete.")
 
 
@@ -100,6 +122,7 @@ app.include_router(alerts_router)
 app.include_router(inputs_router)
 app.include_router(saved_searches_router)
 app.include_router(system_router)
+app.include_router(forwarder_router)
 
 # Mount Static UI Files
 static_dir = Path(__file__).resolve().parent.parent / "static"

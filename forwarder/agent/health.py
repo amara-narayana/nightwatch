@@ -61,3 +61,5 @@ class AgentHealthMonitor:
             },
             "queue": queue_stats
         }
+
+    get_metrics = get_snapshot

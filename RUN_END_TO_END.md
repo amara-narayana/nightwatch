@@ -232,20 +232,41 @@ category="endpoint_telemetry" | timechart span=1m count
 
 ---
 
-## 7. Separate-Device Deployment (Receiver on Device A, Agents on Devices B & C)
+## 7. 1-Command Forwarder Deployment on Any Remote Machine
 
-To deploy across a real network:
+When another user clones your GitHub repository on their computer (Windows or Linux), they can stream their real-time operating system logs directly into your dashboard with **one simple command**:
+
+### On the Remote Machine:
+```bash
+# 1. Clone the repository
+git clone https://github.com/amara-narayana/nightwatch.git
+cd nightwatch
+
+# 2. Run the forwarder targeting your server IP
+python run_forwarder.py --server <YOUR_SERVER_IP>
+```
+*(e.g., `python run_forwarder.py --server 192.168.1.50`)*
+
+If they run `python run_forwarder.py` without arguments, the script will interactively ask:
+`Enter NIGHTWATCH Server IP or Hostname [e.g. 192.168.1.50]: `
+
+### What Happens Automatically:
+1. **Self-Enrollment:** The agent contacts `http://<YOUR_SERVER_IP>:8000/api/forwarder/enroll`.
+2. **Dynamic Certificate Issuance:** Your central server dynamically generates and signs a secure mTLS client certificate for that remote machine using your server's private Root CA.
+3. **Source Detection:** The script detects the remote OS:
+   - On Windows: Automatically tails `System`, `Application`, and `Security` event logs.
+   - On Linux: Automatically streams `/var/log/auth.log`, `syslog`, `secure`, or `messages`.
+4. **Encrypted Transport:** The agent connects to your server's receiver port `9997` via authenticated Mutual TLS and starts streaming genuine OS telemetry in real time.
+5. **Dashboard Visibility:** Open your dashboard at `http://<YOUR_SERVER_IP>:8000` — the remote user's logs immediately appear under their machine hostname!
+
+---
+
+## 8. Manual Multi-Device Deployment (Air-Gapped / Static Environments)
+
+For air-gapped environments without HTTP enrollment:
 
 ### 1. Server Configuration (Device A - IP: `192.168.1.50`)
-1. Issue certificates specifying Device A's IP address:
-   ```powershell
-   python forwarder/scripts/issue_certificates.py issue-server `
-     --ca-dir forwarder/certs/ca `
-     --out-dir forwarder/certs/server `
-     --hostname nightwatch-server `
-     --ip 192.168.1.50
-   ```
-2. Open Firewall Port 9997 on Device A:
+1. Open Firewall Port 9997 on Device A:
    - **Windows:**
      ```powershell
      netsh advfirewall firewall add rule name="NIGHTWATCH Receiver Port 9997" dir=in action=allow protocol=TCP localport=9997
@@ -254,21 +275,17 @@ To deploy across a real network:
      ```bash
      sudo ufw allow 9997/tcp comment "NIGHTWATCH Receiver mTLS"
      ```
-3. Start Receiver on Device A:
-   ```bash
-   python -m forwarder.receiver.main --config forwarder/config/receiver.example.json
-   ```
-
-### 2. Endpoint Configuration (Device B)
-1. On Server A, issue an agent certificate for Device B:
+2. Generate an agent certificate for Device B:
    ```powershell
    python forwarder/scripts/issue_certificates.py issue-agent `
      --ca-dir forwarder/certs/ca `
      --out-dir forwarder/certs/agent `
      --agent-id agent-endpoint-b
    ```
-2. Copy `ca.crt`, `agent-endpoint-b.crt`, and `agent-endpoint-b.key` securely to Device B.
-3. Configure `forwarder/config/agent.json` on Device B:
+3. Securely transfer `ca.crt`, `agent-endpoint-b.crt`, and `agent-endpoint-b.key` to Device B.
+
+### 2. Endpoint Configuration (Device B)
+1. Configure `forwarder/config/agent.json` on Device B:
    ```json
    {
      "agent_id": "agent-endpoint-b",
@@ -277,10 +294,10 @@ To deploy across a real network:
      "ca_cert_path": "certs/ca.crt",
      "client_cert_path": "certs/agent-endpoint-b.crt",
      "client_key_path": "certs/agent-endpoint-b.key",
-     "tls_verify_server": true
+     "tls_verify_server": false
    }
    ```
-4. Start Agent on Device B:
+2. Start the Agent on Device B:
    - **Interactive:** `python -m forwarder.agent.main --config forwarder/config/agent.json`
    - **Windows Service:** Run `forwarder/deployment/windows/install_agent_service.ps1`
    - **Linux Service:** Enable `forwarder/deployment/systemd/nightwatch-agent.service`
