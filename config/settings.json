@@ -1,0 +1,35 @@
+{
+  "app_name": "NIGHTWATCH",
+  "app_title": "NIGHTWATCH — Lightweight Security Intelligence Platform",
+  "version": "1.0.0",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8000,
+    "log_level": "info",
+    "cors_origins": ["http://127.0.0.1:8000", "http://localhost:8000"]
+  },
+  "storage": {
+    "db_path": "data/nightwatch.db",
+    "wal_mode": true,
+    "cache_size_kb": 32000,
+    "retention_days": 30,
+    "max_storage_mb": 15000,
+    "min_free_disk_mb": 5000
+  },
+  "ingestion": {
+    "batch_size": 500,
+    "poll_interval_seconds": 1.0,
+    "max_queue_size": 5000,
+    "checkpoint_file": "data/checkpoints.json"
+  },
+  "search": {
+    "default_limit": 1000,
+    "max_limit": 50000,
+    "timeout_seconds": 30
+  },
+  "detection": {
+    "enabled": true,
+    "interval_seconds": 30,
+    "suppression_window_minutes": 15
+  }
+}

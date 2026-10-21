@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NIGHTWATCH — Lightweight Security Intelligence Platform</title>
+  <link rel="stylesheet" href="/static/css/nightwatch.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="nw-header">
+    <div class="nw-brand" onclick="NW.switchTab('dashboard')">
+      <div class="nw-brand-logo">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+      </div>
+      <span class="nw-brand-title">NIGHTWATCH</span>
+      <span class="nw-brand-badge">SIEM 1.0</span>
+    </div>
+
+    <nav class="nw-nav-tabs">
+      <button class="nw-nav-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="nw-nav-btn" data-tab="search">Search & Analytics</button>
+      <button class="nw-nav-btn" data-tab="alerts">Alerts & Detections</button>
+      <button class="nw-nav-btn" data-tab="inputs">Data Sources</button>
+      <button class="nw-nav-btn" data-tab="saved_searches">Saved Searches</button>
+      <button class="nw-nav-btn" data-tab="health">System Health</button>
+    </nav>
+
+    <div class="nw-header-status">
+      <div class="nw-status-pill">
+        <span class="status-dot"></span>
+        <span id="nw-status-pill-text">Local Storage Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="nw-main-container">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="view-dashboard" class="nw-view active">
+      <!-- KPI Metric Cards -->
+      <div class="nw-kpi-grid">
+        <div class="nw-card">
+          <span class="nw-kpi-label">Indexed Events</span>
+          <span id="kpi-total-events" class="nw-kpi-val">0</span>
+          <span class="nw-kpi-sub">Total records stored locally</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Active Threats & Alerts</span>
+          <span id="kpi-active-alerts" class="nw-kpi-val" style="color:var(--accent-rose);">0</span>
+          <span class="nw-kpi-sub">Rule-based detections triggered</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Database Footprint</span>
+          <span id="kpi-db-size" class="nw-kpi-val">0.0 MB</span>
+          <span class="nw-kpi-sub">SQLite + FTS5 inverted index</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Process Resident RAM</span>
+          <span id="kpi-process-ram" class="nw-kpi-val" style="color:var(--accent-cyan);">0.0 MB</span>
+          <span class="nw-kpi-sub">Memory budget < 300 MB</span>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">Events by Severity</span>
+          </div>
+          <div id="chart-severities" style="height:150px;"></div>
+        </div>
+
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">Events by Sourcetype</span>
+          </div>
+          <div id="chart-sourcetypes" style="height:150px;"></div>
+        </div>
+      </div>
+
+      <!-- Top Entities Breakdown -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">Top Active Hosts</span>
+          </div>
+          <div id="chart-top-hosts" style="padding:10px 0;"></div>
+        </div>
+
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">Top Source IP Addresses</span>
+          </div>
+          <div id="chart-top-ips" style="padding:10px 0;"></div>
+        </div>
+      </div>
+
+      <!-- Recent Alerts Table -->
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Recent Security Alerts</span>
+          <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.switchTab('alerts')">View All Alerts</button>
+        </div>
+        <div class="nw-table-wrap" style="min-height:180px;">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Rule Name</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Time (UTC)</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-alerts-body">
+              <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);">Loading alerts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. SEARCH & ANALYTICS VIEW -->
+    <section id="view-search" class="nw-view">
+      <!-- SPL Search Box -->
+      <div class="nw-search-bar-container">
+        <div class="nw-spl-input-row">
+          <div class="nw-spl-input-wrap">
+            <span class="nw-spl-icon">&gt;</span>
+            <input type="text" id="nw-search-input" class="nw-spl-input" placeholder='Enter SPL search (e.g. index=security "failed password" | stats count by user)' value="*">
+          </div>
+          <select id="nw-search-timerange" class="nw-time-select">
+            <option value="all">All Time</option>
+            <option value="15m">Last 15 Minutes</option>
+            <option value="1h">Last 1 Hour</option>
+            <option value="24h">Last 24 Hours</option>
+            <option value="7d">Last 7 Days</option>
+          </select>
+          <button id="nw-search-submit" class="nw-btn nw-btn-primary">Search</button>
+        </div>
+
+        <!-- Quick Query Suggestion Chips -->
+        <div class="nw-spl-chips">
+          <span class="nw-chip-label">Quick Queries:</span>
+          <span class="nw-chip" onclick="NW.setQuery('*')">All Events</span>
+          <span class="nw-chip" onclick="NW.setQuery('index=security &quot;failed password&quot;')">Failed Passwords</span>
+          <span class="nw-chip" onclick="NW.setQuery('sourcetype=linux_auth | stats count by src_ip')">Auth by Source IP</span>
+          <span class="nw-chip" onclick="NW.setQuery('index=ids | stats count by signature')">IDS Alerts</span>
+          <span class="nw-chip" onclick="NW.setQuery('index=* | top 10 host')">Top Hosts</span>
+          <span class="nw-chip" onclick="NW.setQuery('index=* | timechart span=5m count')">Timechart 5m</span>
+        </div>
+      </div>
+
+      <!-- Search Body: Sidebar + Results Area -->
+      <div class="nw-search-body">
+        <!-- Discovered Fields Sidebar -->
+        <div id="nw-sidebar-fields" class="nw-sidebar">
+          <div class="nw-sidebar-title">Discovered Fields</div>
+          <div style="color:var(--text-dim);font-size:12px;padding:8px 0;">Scanning events...</div>
+        </div>
+
+        <!-- Results Main Area -->
+        <div class="nw-results-area">
+          <!-- Event Timeline Histogram -->
+          <div class="nw-histogram-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.5px;">Event Volume Over Time</span>
+            </div>
+            <div id="nw-search-histogram" style="flex:1;"></div>
+          </div>
+
+          <!-- Results Controls & Toolbar -->
+          <div class="nw-results-toolbar">
+            <span id="nw-search-stats" class="nw-results-stats">Ready</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.saveCurrentSearch()">Save Search</button>
+              <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.exportSearch('csv')">Export CSV</button>
+              <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.exportSearch('json')">Export JSON</button>
+              <div class="nw-view-toggle">
+                <button class="nw-toggle-btn active" data-mode="table">Table</button>
+                <button class="nw-toggle-btn" data-mode="raw">Raw</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Results Table / Raw Container -->
+          <div id="nw-search-results-content" class="nw-table-wrap">
+            <div style="padding:40px;text-align:center;color:var(--text-dim);">Execute a query to inspect records.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ALERTS & DETECTIONS VIEW -->
+    <section id="view-alerts" class="nw-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Security Incidents & Detections</h2>
+          <p style="color:var(--text-muted);font-size:12px;">Evidence-backed security detections evaluated across local log streams.</p>
+        </div>
+        <button class="nw-btn nw-btn-primary nw-btn-sm" onclick="NW.triggerDetectionCycle()">Evaluate Rules Now</button>
+      </div>
+
+      <!-- Alerts Table -->
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Triggered Alerts</span>
+        </div>
+        <div class="nw-table-wrap">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Detection Rule</th>
+                <th>Incident Summary</th>
+                <th>Status</th>
+                <th>Events</th>
+                <th>Triggered At</th>
+              </tr>
+            </thead>
+            <tbody id="alerts-table-body">
+              <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-dim);">Loading alerts...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detection Rules Configuration -->
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Configured Detection Rules</span>
+        </div>
+        <div class="nw-table-wrap">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Active</th>
+                <th>Rule Name</th>
+                <th>Severity</th>
+                <th>Type</th>
+                <th>Threshold</th>
+                <th>Rationale</th>
+              </tr>
+            </thead>
+            <tbody id="rules-table-body">
+              <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-dim);">Loading rules...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. DATA SOURCES & INPUTS VIEW -->
+    <section id="view-inputs" class="nw-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Data Ingestion & Log Sources</h2>
+          <p style="color:var(--text-muted);font-size:12px;">Persistent file monitoring, byte offsets, and ingestion checkpoint registry.</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.triggerCollect()">Trigger Ingestion Pass</button>
+          <button class="nw-btn nw-btn-primary nw-btn-sm" onclick="NW.openModal('modal-add-input')">Add Log Source</button>
+        </div>
+      </div>
+
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Configured Log Inputs</span>
+        </div>
+        <div class="nw-table-wrap">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Input ID</th>
+                <th>File Path</th>
+                <th>Sourcetype</th>
+                <th>Index</th>
+                <th>Byte Offset</th>
+                <th>Events Ingested</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inputs-table-body">
+              <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-dim);">Loading inputs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. SAVED SEARCHES & HISTORY VIEW -->
+    <section id="view-saved_searches" class="nw-view">
+      <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">Saved Searches & Query History</h2>
+
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Saved Searches</span>
+        </div>
+        <div class="nw-table-wrap">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>SPL Query</th>
+                <th>Description</th>
+                <th>Run Count</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="saved-searches-body">
+              <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);">Loading saved searches...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="nw-card">
+        <div class="nw-card-header">
+          <span class="nw-card-title">Recent Query Execution History</span>
+        </div>
+        <div class="nw-table-wrap">
+          <table class="nw-table">
+            <thead>
+              <tr>
+                <th>Executed SPL</th>
+                <th>Duration</th>
+                <th>Records</th>
+                <th>Status</th>
+                <th>Executed At</th>
+              </tr>
+            </thead>
+            <tbody id="search-history-body">
+              <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim);">Loading history...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. SYSTEM HEALTH & RETENTION VIEW -->
+    <section id="view-health" class="nw-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h2 style="font-size:18px;font-weight:700;color:#FFFFFF;">System Health & Performance Telemetry</h2>
+          <p style="color:var(--text-muted);font-size:12px;">Real-time host and process metrics verified against the 8 GB / 40 GB budget.</p>
+        </div>
+        <button class="nw-btn nw-btn-secondary nw-btn-sm" onclick="NW.triggerRetentionCleanup()">Run Retention Cleanup</button>
+      </div>
+
+      <div class="nw-kpi-grid">
+        <div class="nw-card">
+          <span class="nw-kpi-label">Process RSS RAM</span>
+          <span id="health-proc-rss" class="nw-kpi-val" style="color:var(--accent-cyan);">-</span>
+          <span class="nw-kpi-sub">Resident memory in RAM</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Process CPU</span>
+          <span id="health-proc-cpu" class="nw-kpi-val">-</span>
+          <span class="nw-kpi-sub">Application CPU core usage</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Host RAM Footprint</span>
+          <span id="health-host-ram" class="nw-kpi-val" style="font-size:16px;">-</span>
+          <span class="nw-kpi-sub">Total physical host RAM</span>
+        </div>
+        <div class="nw-card">
+          <span class="nw-kpi-label">Host CPU</span>
+          <span id="health-host-cpu" class="nw-kpi-val">-</span>
+          <span class="nw-kpi-sub">System CPU load</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">Database Storage & Limits</span>
+          </div>
+          <div style="padding:10px 0;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Current Database Size:</span>
+              <span id="health-db-size" style="font-family:monospace;font-weight:700;color:#FFFFFF;">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Storage Hard Quota:</span>
+              <span style="font-family:monospace;color:var(--text-main);">15,000 MB (15 GB)</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Configured Retention Period:</span>
+              <span style="font-family:monospace;color:var(--text-main);">30 Days</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nw-card">
+          <div class="nw-card-header">
+            <span class="nw-card-title">SSD Storage Guardian</span>
+          </div>
+          <div style="padding:10px 0;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Host Free SSD Space:</span>
+              <span id="health-disk-free" style="font-family:monospace;font-weight:700;color:var(--accent-emerald);">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Minimum Free Space Guard:</span>
+              <span style="font-family:monospace;color:var(--text-main);">5,000 MB (5 GB)</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:var(--text-muted);">Platform Uptime:</span>
+              <span id="health-uptime" style="font-family:monospace;color:var(--text-main);">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Event Detail Inspector -->
+  <div id="modal-event-details" class="nw-modal-overlay">
+    <div class="nw-modal">
+      <div class="nw-modal-header">
+        <span class="nw-modal-title">Event Detail Inspector</span>
+        <button class="nw-modal-close" onclick="NW.closeModal('modal-event-details')">&times;</button>
+      </div>
+      <div class="nw-modal-body">
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;background-color:var(--bg-input);padding:10px;border-radius:4px;font-size:12px;">
+          <div><strong style="color:var(--text-dim);">Time:</strong> <span id="modal-event-time" style="font-family:monospace;">-</span></div>
+          <div><strong style="color:var(--text-dim);">Host:</strong> <span id="modal-event-host" style="font-family:monospace;">-</span></div>
+          <div><strong style="color:var(--text-dim);">Sourcetype:</strong> <span id="modal-event-sourcetype" style="font-family:monospace;">-</span></div>
+        </div>
+        <div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);">Raw Event String (_raw)</span>
+          <pre id="modal-event-raw" class="nw-raw-pre"></pre>
+        </div>
+        <div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);">Extracted & Normalized Fields</span>
+          <div class="nw-table-wrap" style="max-height:200px;">
+            <table class="nw-table">
+              <thead><tr><th>Field Name</th><th>Field Value</th></tr></thead>
+              <tbody id="modal-event-fields-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="nw-modal-footer">
+        <button class="nw-btn nw-btn-secondary" onclick="NW.closeModal('modal-event-details')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Alert Evidence & Lifecycle Manager -->
+  <div id="modal-alert-details" class="nw-modal-overlay">
+    <div class="nw-modal" style="width:850px;">
+      <div class="nw-modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="modal-alert-sev" class="badge-sev badge-sev-high">HIGH</span>
+          <span id="modal-alert-title" class="nw-modal-title">Alert Details</span>
+        </div>
+        <button class="nw-modal-close" onclick="NW.closeModal('modal-alert-details')">&times;</button>
+      </div>
+      <div class="nw-modal-body">
+        <input type="hidden" id="modal-alert-id-hidden">
+        <p id="modal-alert-desc" style="color:var(--text-main);font-size:13px;"></p>
+
+        <!-- Lifecycle State Changer -->
+        <div style="display:flex;gap:16px;align-items:center;background-color:var(--bg-input);padding:12px;border-radius:6px;">
+          <label style="font-weight:600;font-size:12px;">Alert Status:</label>
+          <select id="modal-alert-status" class="nw-time-select" style="height:34px;">
+            <option value="new">New</option>
+            <option value="acknowledged">Acknowledged</option>
+            <option value="investigating">Investigating</option>
+            <option value="resolved">Resolved</option>
+          </select>
+          <input type="text" id="modal-alert-notes" class="nw-spl-input" style="height:34px;font-family:var(--font-sans);" placeholder="Add resolution notes or analyst findings...">
+          <button class="nw-btn nw-btn-primary nw-btn-sm" onclick="NW.saveAlertStatus()">Update Status</button>
+        </div>
+
+        <div>
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-dim);">Triggering Evidence Events</span>
+          <div class="nw-table-wrap" style="max-height:220px;margin-top:6px;">
+            <table class="nw-table">
+              <thead><tr><th>Time (UTC)</th><th>Host</th><th>User / IP</th><th>Raw Snippet</th></tr></thead>
+              <tbody id="modal-alert-evidence-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="nw-modal-footer">
+        <button class="nw-btn nw-btn-secondary" onclick="NW.closeModal('modal-alert-details')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Add Log Input Source -->
+  <div id="modal-add-input" class="nw-modal-overlay">
+    <div class="nw-modal" style="width:500px;">
+      <div class="nw-modal-header">
+        <span class="nw-modal-title">Add Monitored Log Input</span>
+        <button class="nw-modal-close" onclick="NW.closeModal('modal-add-input')">&times;</button>
+      </div>
+      <div class="nw-modal-body">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:12px;font-weight:600;">Input Identifier:</label>
+          <input type="text" id="input-add-id" class="nw-spl-input" placeholder="e.g. nginx_access">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:12px;font-weight:600;">Log File Path:</label>
+          <input type="text" id="input-add-path" class="nw-spl-input" placeholder="e.g. samples/auth.log or /var/log/nginx/access.log">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:12px;font-weight:600;">Sourcetype:</label>
+          <select id="input-add-sourcetype" class="nw-time-select">
+            <option value="auto">Auto-detect</option>
+            <option value="linux_auth">Linux Auth (sshd / sudo)</option>
+            <option value="suricata_eve">Suricata EVE JSON</option>
+            <option value="winevt">Windows Security Event Log</option>
+            <option value="syslog">Standard Syslog</option>
+            <option value="json">Generic JSON</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:12px;font-weight:600;">Destination Index:</label>
+          <input type="text" id="input-add-index" class="nw-spl-input" value="main">
+        </div>
+      </div>
+      <div class="nw-modal-footer">
+        <button class="nw-btn nw-btn-secondary" onclick="NW.closeModal('modal-add-input')">Cancel</button>
+        <button class="nw-btn nw-btn-primary" onclick="NW.addLogInputSubmit()">Save &amp; Monitor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="nw-toast-container" class="nw-toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

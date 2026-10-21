@@ -1,0 +1,107 @@
+{
+  "rules": [
+    {
+      "id": "det_ssh_bruteforce",
+      "name": "Repeated Failed SSH Logins (Brute Force)",
+      "description": "Detects multiple failed authentication attempts from a single source IP within a short window, indicating potential brute force password attacks.",
+      "severity": "high",
+      "category": "credential_access",
+      "enabled": true,
+      "time_window_seconds": 300,
+      "threshold": 5,
+      "group_by": "src_ip",
+      "rule_type": "threshold",
+      "conditions": {
+        "sourcetype": "linux_auth",
+        "action": "failure"
+      },
+      "suppression_window_seconds": 900
+    },
+    {
+      "id": "det_password_spraying",
+      "name": "Password Spraying Campaign Detected",
+      "description": "Detects a single source IP attempting failed authentications across multiple distinct usernames, characteristic of horizontal password spraying.",
+      "severity": "critical",
+      "category": "credential_access",
+      "enabled": true,
+      "time_window_seconds": 600,
+      "threshold": 3,
+      "group_by": "src_ip",
+      "distinct_field": "user",
+      "rule_type": "distinct_threshold",
+      "conditions": {
+        "action": "failure"
+      },
+      "suppression_window_seconds": 900
+    },
+    {
+      "id": "det_auth_success_after_failure",
+      "name": "Successful Authentication After Multiple Failures",
+      "description": "Detects a successful login for a user account that immediately followed 3 or more failed login attempts, suggesting a compromised credential or successful brute force.",
+      "severity": "high",
+      "category": "initial_access",
+      "enabled": true,
+      "time_window_seconds": 600,
+      "failure_threshold": 3,
+      "rule_type": "sequence",
+      "group_by": "user",
+      "suppression_window_seconds": 900
+    },
+    {
+      "id": "det_privileged_account_attempts",
+      "name": "Repeated Authentication Attempts on Privileged Accounts",
+      "description": "Detects multiple authentication attempts targeting high-value administrative accounts (root, administrator, admin).",
+      "severity": "high",
+      "category": "privilege_escalation",
+      "enabled": true,
+      "time_window_seconds": 300,
+      "threshold": 3,
+      "group_by": "src_ip",
+      "rule_type": "privileged_target",
+      "privileged_users": ["root", "administrator", "admin", "postgres", "system"],
+      "suppression_window_seconds": 900
+    },
+    {
+      "id": "det_suricata_high_ids",
+      "name": "High-Severity IDS Threat Alert",
+      "description": "Surfaces critical/high intrusion detection signatures from Suricata EVE logs, such as exploit kits, malware command & control, or reverse shells.",
+      "severity": "critical",
+      "category": "network",
+      "enabled": true,
+      "rule_type": "ids_alert",
+      "conditions": {
+        "sourcetype": "suricata_eve",
+        "min_severity": "high"
+      },
+      "suppression_window_seconds": 300
+    },
+    {
+      "id": "det_suspicious_process_execution",
+      "name": "Suspicious Process or Command-Line Pattern",
+      "description": "Detects known offensive tools or reconnaissance command patterns (e.g., encoded powershell, certutil download, mimikatz, whoami recon).",
+      "severity": "high",
+      "category": "execution",
+      "enabled": true,
+      "rule_type": "regex_pattern",
+      "regex": "(?i)(powershell.*-enc|mimikatz|certutil.*-urlcache|whoami\\b.*\\/all|curl.*\\|\\s*sh|wget.*\\|\\s*bash|vssadmin.*delete.*shadows)",
+      "suppression_window_seconds": 600
+    },
+    {
+      "id": "det_multi_host_lateral_movement",
+      "name": "Multi-Host Authentication (Potential Lateral Movement)",
+      "description": "Detects an internal or external source IP connecting to more than 3 distinct target hosts in a short time frame.",
+      "severity": "high",
+      "category": "lateral_movement",
+      "enabled": true,
+      "time_window_seconds": 600,
+      "threshold": 3,
+      "group_by": "src_ip",
+      "distinct_field": "host",
+      "rule_type": "distinct_threshold",
+      "conditions": {
+        "category": "authentication"
+      },
+      "suppression_window_seconds": 900
+    }
+  ]
+}
