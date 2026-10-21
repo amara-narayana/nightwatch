@@ -676,19 +676,70 @@ const NW = {
     }
   },
 
+  realtimeEnabled: true,
+
+  toggleRealtimeStream() {
+    this.realtimeEnabled = !this.realtimeEnabled;
+    const btn = document.getElementById('btn-toggle-realtime');
+    const badge = document.getElementById('nw-realtime-badge');
+    const dot = badge ? badge.querySelector('.status-dot') : null;
+
+    if (this.realtimeEnabled) {
+      if (btn) btn.innerText = 'Pause Stream';
+      if (badge) {
+        badge.style.borderColor = '#BFDBFE';
+        badge.style.backgroundColor = '#EFF6FF';
+        badge.style.color = '#1D4ED8';
+      }
+      if (dot) {
+        dot.style.backgroundColor = '#10B981';
+        dot.style.boxShadow = '0 0 8px #10B981';
+      }
+      this.showToast('Real-time streaming resumed.', 'info');
+      this.refreshActiveTab();
+    } else {
+      if (btn) btn.innerText = 'Resume Stream';
+      if (badge) {
+        badge.style.borderColor = '#E2E8F0';
+        badge.style.backgroundColor = '#F8FAFC';
+        badge.style.color = '#64748B';
+      }
+      if (dot) {
+        dot.style.backgroundColor = '#94A3B8';
+        dot.style.boxShadow = 'none';
+      }
+      this.showToast('Real-time streaming paused.', 'info');
+    }
+  },
+
+  refreshActiveTab() {
+    if (this.activeTab === 'dashboard') {
+      this.loadDashboard();
+    } else if (this.activeTab === 'alerts') {
+      this.loadAlerts();
+    } else if (this.activeTab === 'health') {
+      this.loadHealth();
+    } else if (this.activeTab === 'inputs') {
+      this.loadInputs();
+    }
+  },
+
   pollStatus() {
     setInterval(async () => {
+      if (!this.realtimeEnabled) return;
       try {
         const res = await fetch('/api/system/health');
         if (res.ok) {
           const d = await res.json();
           const pill = document.getElementById('nw-status-pill-text');
           if (pill) {
-            pill.innerText = `${d.database.total_events.toLocaleString()} events | ${d.application.process_rss_mb} MB RAM`;
+            pill.innerText = `● LIVE: ${d.database.total_events.toLocaleString()} Events | ${d.application.process_rss_mb} MB RAM`;
           }
+          // Dynamically refresh active tab view in real time
+          this.refreshActiveTab();
         }
       } catch (e) {}
-    }, 10000);
+    }, 3000);
   },
 
   escapeHtml(str) {

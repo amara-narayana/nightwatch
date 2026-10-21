@@ -1,36 +1,44 @@
 {
   "inputs": [
     {
-      "id": "linux_auth_sample",
-      "path": "samples/auth.log",
-      "sourcetype": "linux_auth",
+      "id": "windows_system_log",
+      "path": "Windows:System",
+      "sourcetype": "winevt:system",
+      "index": "main",
+      "enabled": true,
+      "description": "Live native Windows System Event Log"
+    },
+    {
+      "id": "windows_application_log",
+      "path": "Windows:Application",
+      "sourcetype": "winevt:application",
+      "index": "main",
+      "enabled": true,
+      "description": "Live native Windows Application Event Log"
+    },
+    {
+      "id": "windows_powershell_log",
+      "path": "Windows:PowerShell",
+      "sourcetype": "winevt:powershell",
       "index": "security",
       "enabled": true,
-      "description": "Linux authentication and SSH log"
+      "description": "Live native Windows PowerShell Operational Log"
     },
     {
-      "id": "suricata_eve_sample",
-      "path": "samples/suricata_eve.json",
-      "sourcetype": "suricata_eve",
-      "index": "ids",
+      "id": "host_process_monitor",
+      "path": "Host:Processes",
+      "sourcetype": "host:process",
+      "index": "main",
       "enabled": true,
-      "description": "Suricata EVE JSON network security events"
+      "description": "Live OS Process Spawns and Execution Telemetry"
     },
     {
-      "id": "windows_events_sample",
-      "path": "samples/windows_events.json",
-      "sourcetype": "winevt",
-      "index": "security",
-      "enabled": true,
-      "description": "Windows Security Event Logs"
-    },
-    {
-      "id": "syslog_sample",
-      "path": "samples/syslog.log",
+      "id": "syslog_udp_1514",
+      "path": "udp:0.0.0.0:1514",
       "sourcetype": "syslog",
       "index": "main",
       "enabled": true,
-      "description": "System daemon and kernel syslog"
+      "description": "Live RFC 3164/5424 Syslog UDP Network Listener"
     }
   ]
 }

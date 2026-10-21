@@ -30,10 +30,13 @@
     </nav>
 
     <div class="nw-header-status">
-      <div class="nw-status-pill">
-        <span class="status-dot"></span>
-        <span id="nw-status-pill-text">Local Storage Online</span>
+      <div id="nw-realtime-badge" class="nw-status-pill" style="border-color:#BFDBFE;background-color:#EFF6FF;color:#1D4ED8;font-weight:600;">
+        <span class="status-dot" style="background-color:#10B981;box-shadow:0 0 8px #10B981;"></span>
+        <span id="nw-status-pill-text">Live Host Streaming Active</span>
       </div>
+      <button id="btn-toggle-realtime" class="nw-btn nw-btn-secondary nw-btn-sm" style="font-size:11px;padding:3px 10px;height:30px;" onclick="NW.toggleRealtimeStream()">
+        Pause Stream
+      </button>
     </div>
   </header>
 

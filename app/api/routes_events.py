@@ -3,15 +3,76 @@ NIGHTWATCH — Events and Investigation API Endpoints
 """
 
 import json
+import time
 from collections import Counter
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.services.investigation import get_investigation_service
 from app.storage.engine import get_storage_engine
 
 router = APIRouter(prefix="/api/events", tags=["Events"])
+
+
+@router.post("/hec")
+async def hec_post_route(request: Request):
+    """
+    Real-Time HTTP Event Collector (HEC) endpoint.
+    Accepts single or batched JSON logs for instant real-time indexing.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raw_b = await request.body()
+        body = {"event": raw_b.decode("utf-8", errors="replace")}
+    return http_event_collector(body)
+
+
+def http_event_collector(req_body: Any):
+    """
+    Core HEC event ingestion processor.
+    """
+    from datetime import datetime, timezone
+    from app.models.event import NormalizedEvent
+
+    storage = get_storage_engine()
+    events_to_insert = []
+
+    # Handle single dict or list of dicts
+    items = req_body if isinstance(req_body, list) else [req_body]
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        raw_event = item.get("event")
+        raw_str = json.dumps(raw_event) if isinstance(raw_event, (dict, list)) else str(raw_event or item)
+        host = item.get("host", "hec-client")
+        source = item.get("source", "http:hec")
+        sourcetype = item.get("sourcetype", "json")
+        index_name = item.get("index", "main")
+        epoch_ts = float(item.get("time", time.time()))
+
+        dt = datetime.fromtimestamp(epoch_ts, tz=timezone.utc)
+        fields = item.get("fields", {})
+        if isinstance(raw_event, dict):
+            fields.update(raw_event)
+
+        ev = NormalizedEvent.create(
+            raw=raw_str,
+            timestamp=dt,
+            host=host,
+            source=source,
+            sourcetype=sourcetype,
+            index_name=index_name,
+            fields=fields
+        )
+        events_to_insert.append(ev)
+
+    if events_to_insert:
+        storage.insert_events_batch(events_to_insert)
+
+    return {"text": "Success", "code": 0, "ingested_count": len(events_to_insert)}
 
 
 @router.get("/{event_id}")

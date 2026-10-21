@@ -6,6 +6,7 @@ Product: NIGHTWATCH — Lightweight Security Intelligence Platform
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -18,6 +19,9 @@ from app.api.routes_saved_searches import router as saved_searches_router
 from app.api.routes_search import router as search_router
 from app.api.routes_system import router as system_router
 from app.collectors.file_collector import get_file_collector
+from app.collectors.host_telemetry import get_host_telemetry_collector
+from app.collectors.syslog_listener import get_syslog_listener
+from app.collectors.windows_collector import get_windows_collector
 from app.core.config import get_settings
 from app.detection.engine import get_detection_engine
 from app.storage.engine import get_storage_engine
@@ -39,20 +43,35 @@ async def lifespan(app: FastAPI):
     storage = get_storage_engine()
     logger.info(f"Storage initialized at: {storage.db_path}")
 
-    # Start Ingestion Subsystem
-    collector = get_file_collector()
-    collector.start()
+    # 1. Start Continuous File Ingestion Subsystem (monitors configured real log files)
+    file_collector = get_file_collector()
+    file_collector.start()
 
-    # Start Detection Subsystem
+    # 2. Start Real-Time Native Windows Event Log Collector (System, Application, PowerShell)
+    windows_collector = get_windows_collector()
+    windows_collector.start()
+
+    # 3. Start Real-Time Host Process & Network Activity Monitor
+    host_collector = get_host_telemetry_collector()
+    host_collector.start()
+
+    # 4. Start Real-Time UDP Syslog Server (port 1514)
+    syslog_listener = get_syslog_listener()
+    syslog_listener.start()
+
+    # 5. Start Detection Subsystem
     detection = get_detection_engine()
     detection.start()
 
-    logger.info("NIGHTWATCH initialized successfully and ready for analysis.")
+    logger.info("NIGHTWATCH Real-Time Collectors initialized successfully and ready for analysis.")
     yield
 
     # Shutdown actions
-    logger.info("Shutting down NIGHTWATCH background services...")
-    collector.stop()
+    logger.info("Shutting down NIGHTWATCH real-time background services...")
+    file_collector.stop()
+    windows_collector.stop()
+    host_collector.stop()
+    syslog_listener.stop()
     detection.stop()
     logger.info("NIGHTWATCH shutdown complete.")
 
@@ -94,3 +113,17 @@ def serve_index():
     if index_file.exists():
         return FileResponse(str(index_file))
     return {"message": "NIGHTWATCH API online. Web UI index.html not yet built."}
+
+
+@app.post("/services/collector/event", include_in_schema=False)
+@app.post("/services/collector/raw", include_in_schema=False)
+async def splunk_hec_endpoint(request: Request):
+    """Splunk-compatible HTTP Event Collector endpoint."""
+    from app.api.routes_events import http_event_collector
+    try:
+        body = await request.json()
+    except Exception:
+        raw_b = await request.body()
+        body = {"event": raw_b.decode("utf-8", errors="replace")}
+    return http_event_collector(body)
+
