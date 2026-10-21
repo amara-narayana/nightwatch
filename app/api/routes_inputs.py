@@ -37,8 +37,26 @@ class IngestRawRequest(BaseModel):
 @router.get("", response_model=List[LogInput])
 def list_inputs():
     """Lists all configured log inputs, offsets, and statistics."""
+    from app.collectors.windows_collector import get_windows_collector
+    from app.collectors.host_telemetry import get_host_telemetry_collector
+    from app.collectors.syslog_listener import get_syslog_listener
+
     collector = get_file_collector()
-    return collector.get_inputs()
+    inputs = collector.get_inputs()
+
+    win_col = get_windows_collector()
+    host_col = get_host_telemetry_collector()
+    syslog_col = get_syslog_listener()
+
+    for inp in inputs:
+        if "windows" in inp.id:
+            inp.total_events_read = win_col.total_collected // max(1, len(win_col.channels))
+        elif "process" in inp.id:
+            inp.total_events_read = host_col.total_collected
+        elif "syslog" in inp.id:
+            inp.total_events_read = syslog_col.total_received
+
+    return inputs
 
 
 @router.post("", response_model=LogInput)

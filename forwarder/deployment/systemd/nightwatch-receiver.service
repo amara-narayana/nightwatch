@@ -1,0 +1,33 @@
+[Unit]
+Description=NIGHTWATCH Central Telemetry Receiver
+Documentation=https://github.com/amara-narayana/nightwatch
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nightwatch
+Group=nightwatch
+WorkingDirectory=/opt/nightwatch-receiver
+ExecStart=/opt/nightwatch-receiver/venv/bin/python3 -m forwarder.receiver.main --config /etc/nightwatch/receiver.json
+Restart=always
+RestartSec=5s
+
+# Security Hardening
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/nightwatch-receiver /var/log/nightwatch
+
+# Limits
+LimitNOFILE=65536
+MemoryMax=1G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nightwatch-receiver
+
+[Install]
+WantedBy=multi-user.target

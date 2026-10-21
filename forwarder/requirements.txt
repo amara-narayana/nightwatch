@@ -1,0 +1,6 @@
+# NIGHTWATCH Forwarder & Receiver Dependencies
+pydantic>=2.10.0
+cryptography>=42.0.0
+psutil>=6.0.0
+pytest>=8.0.0
+pywin32>=306; sys_platform == 'win32'

@@ -1,0 +1,34 @@
+[Unit]
+Description=NIGHTWATCH Telemetry Forwarder Agent
+Documentation=https://github.com/amara-narayana/nightwatch
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nightwatch
+Group=adm
+WorkingDirectory=/opt/nightwatch-forwarder
+ExecStart=/opt/nightwatch-forwarder/venv/bin/python3 -m forwarder.agent.main --config /etc/nightwatch/agent.json
+Restart=always
+RestartSec=5s
+
+# Security Hardening
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+ReadWritePaths=/var/lib/nightwatch /var/log/nightwatch
+
+# Bounded Resource Limits
+MemoryMax=256M
+CPUQuota=50%
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nightwatch-agent
+
+[Install]
+WantedBy=multi-user.target

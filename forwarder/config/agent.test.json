@@ -1,0 +1,32 @@
+{
+  "agent_id": "agent-win-01",
+  "receiver_host": "127.0.0.1",
+  "receiver_port": 9997,
+  "ca_cert_path": "forwarder/certs/agent/ca.crt",
+  "client_cert_path": "forwarder/certs/agent/agent-win-01.crt",
+  "client_key_path": "forwarder/certs/agent/agent-win-01.key",
+  "tls_verify_server": false,
+  "state_dir": "forwarder/data/agent",
+  "max_queue_size_mb": 100,
+  "max_queue_events": 10000,
+  "queue_full_policy": "pause_collection",
+  "batch_size": 100,
+  "poll_interval_seconds": 1.0,
+  "connect_timeout_seconds": 10.0,
+  "file_sources": [],
+  "windows_channels": [
+    {
+      "channel": "System",
+      "source_type": "winevt:system",
+      "index": "main",
+      "enabled": true
+    },
+    {
+      "channel": "Application",
+      "source_type": "winevt:application",
+      "index": "main",
+      "enabled": true
+    }
+  ],
+  "log_level": "INFO"
+}

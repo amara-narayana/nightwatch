@@ -51,3 +51,7 @@ htmlcov/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Forwarder runtime data & certificates
+forwarder/certs/
+forwarder/data/

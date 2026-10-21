@@ -1,0 +1,29 @@
+{
+  "agent_id": "agent-endpoint-01",
+  "receiver_host": "127.0.0.1",
+  "receiver_port": 9997,
+  "ca_cert_path": "certs/agent/ca.crt",
+  "client_cert_path": "certs/agent/agent-endpoint-01.crt",
+  "client_key_path": "certs/agent/agent-endpoint-01.key",
+  "tls_verify_server": true,
+  "queue_db_path": "data/agent/queue.db",
+  "checkpoint_db_path": "data/agent/checkpoints.db",
+  "max_queue_size": 100000,
+  "batch_size": 500,
+  "flush_interval_seconds": 2.0,
+  "poll_interval_seconds": 1.0,
+  "connect_timeout_seconds": 15.0,
+  "initial_backoff_seconds": 1.0,
+  "max_backoff_seconds": 60.0,
+  "backoff_factor": 2.0,
+  "linux_log_files": [
+    "/var/log/auth.log",
+    "/var/log/syslog"
+  ],
+  "windows_channels": [
+    "System",
+    "Application",
+    "Security"
+  ],
+  "log_level": "INFO"
+}

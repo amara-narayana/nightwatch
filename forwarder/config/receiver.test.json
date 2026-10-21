@@ -1,0 +1,17 @@
+{
+  "listen_host": "127.0.0.1",
+  "listen_port": 9997,
+  "ca_cert_path": "forwarder/certs/server/ca.crt",
+  "server_cert_path": "forwarder/certs/server/server.crt",
+  "server_key_path": "forwarder/certs/server/server.key",
+  "require_client_cert": true,
+  "allowed_agents": [
+    "agent-win-01"
+  ],
+  "storage_path": "forwarder/data/receiver/receiver.db",
+  "integrate_nightwatch_db": true,
+  "nightwatch_db_path": "data/nightwatch.db",
+  "max_connections": 500,
+  "connection_timeout_seconds": 60.0,
+  "log_level": "INFO"
+}
