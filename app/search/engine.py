@@ -6,6 +6,7 @@ pipeline execution, histogram generation, and performance auditing.
 
 import json
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -164,21 +165,26 @@ class SearchEngine:
             params.append(latest_epoch)
 
         # Filters on indexed columns and fields
+        allowed_ops = {"=": "=", "!=": "!=", ">": ">", "<": "<", ">=": ">=", "<=": "<="}
         for flt in stage.filters:
+            op = allowed_ops.get(flt.op, "=")
             col_name = INDEXED_COLUMNS.get(flt.field)
+            has_wildcard = "*" in str(flt.value)
+            val = str(flt.value).replace("*", "%") if has_wildcard else flt.value
+
             if col_name:
-                # Direct SQL column comparison
-                if "*" in str(flt.value):
-                    sql_pattern = str(flt.value).replace("*", "%")
-                    where_clauses.append(f"events.{col_name} LIKE ?")
-                    params.append(sql_pattern)
-                else:
-                    where_clauses.append(f"events.{col_name} {flt.op} ?")
-                    params.append(flt.value)
+                sql_op = ("NOT LIKE" if op == "!=" else "LIKE") if has_wildcard else op
+                where_clauses.append(f"events.{col_name} {sql_op} ?")
+                params.append(val)
             else:
-                # Structured field stored inside json_extract(fields_json, '$.field')
-                where_clauses.append(f"json_extract(events.fields_json, '$.{flt.field}') {flt.op} ?")
-                params.append(flt.value)
+                # Structured field stored inside json_extract(events.fields_json, ?)
+                # shortcut: flat JSON path only, upgrade if nested dot notation is supported in SPL filters
+                safe_field = re.sub(r"[^a-zA-Z0-9_\.]", "", flt.field)
+                if not safe_field:
+                    continue
+                sql_op = ("NOT LIKE" if op == "!=" else "LIKE") if has_wildcard else op
+                where_clauses.append(f"json_extract(events.fields_json, ?) {sql_op} ?")
+                params.extend([f"$.{safe_field}", val])
 
         # Full-Text Search terms matching
         if stage.terms:

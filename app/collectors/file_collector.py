@@ -146,6 +146,7 @@ class FileCollector:
             cp.header_hash = self.checkpoint_mgr.compute_header_hash(file_path)
 
         events_batch: List[NormalizedEvent] = []
+        total_ingested = 0
         batch_size = self.settings.ingestion.batch_size
         new_offset = cp.last_offset
 
@@ -178,11 +179,14 @@ class FileCollector:
                     # Flush batch when size limit reached
                     if len(events_batch) >= batch_size:
                         self.storage.insert_events_batch(events_batch)
+                        total_ingested += len(events_batch)
                         events_batch.clear()
 
             # Flush remaining batch
             if events_batch:
                 self.storage.insert_events_batch(events_batch)
+                total_ingested += len(events_batch)
+                events_batch.clear()
 
             # Update checkpoint state
             _, _, file_size, mtime = self.checkpoint_mgr.get_file_stat(file_path)
@@ -193,12 +197,11 @@ class FileCollector:
             self.checkpoint_mgr.save_checkpoint(cp)
 
             # Update input stats
-            ingested_count = len(events_batch)
             inp.last_read_offset = new_offset
-            inp.total_events_read += ingested_count
+            inp.total_events_read += total_ingested
             inp.last_read_time = time.time()
 
-            return ingested_count
+            return total_ingested
 
         except Exception as e:
             logger.error(f"Error processing file {file_path}: {e}")

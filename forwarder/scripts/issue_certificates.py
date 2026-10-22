@@ -322,6 +322,7 @@ def create_agent_credentials_pem(ca_dir: Path, agent_id: str, days: int = 365) -
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
+    ).decode("utf-8")
     return ca_pem, cert_pem, key_pem
 
 

@@ -87,3 +87,21 @@ def test_collector_incremental_processing(temp_db, tmp_path):
     count_pass3 = collector.process_file(str(log_file), inp)
     assert count_pass3 == 1
     assert temp_db.count_events() == 2
+
+
+def test_collector_multi_batch_processing(temp_db, tmp_path):
+    log_file = tmp_path / "multi_batch.log"
+    lines = [f"Oct 21 05:00:0{i} host1 sshd[{i}]: Failed password for user{i} from 1.1.1.1 port 22 ssh2\n" for i in range(5)]
+    log_file.write_text("".join(lines), encoding="utf-8")
+
+    collector = FileCollector()
+    collector.storage = temp_db
+    collector.checkpoint_mgr.storage = temp_db
+    collector.settings.ingestion.batch_size = 2
+
+    inp = LogInput(id="multi_inp", path=str(log_file), sourcetype="linux_auth", index="test")
+    count = collector.process_file(str(log_file), inp)
+    assert count == 5
+    assert inp.total_events_read == 5
+    assert temp_db.count_events() == 5
+

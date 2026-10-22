@@ -75,6 +75,18 @@ def test_basic_search_and_filter(test_engine):
     res3 = test_engine.execute('severity=high')
     assert res3.result_count == 2
 
+    # Dynamic JSON Field Equality & Wildcard Filter
+    res_user = test_engine.execute('user=root')
+    assert res_user.result_count == 1
+    assert res_user.records[0]["user"] == "root"
+
+    res_user_wildcard = test_engine.execute('user=al*')
+    assert res_user_wildcard.result_count == 1
+    assert res_user_wildcard.records[0]["user"] == "alice"
+
+    res_ip_wildcard = test_engine.execute('src_ip="192.168.*"')
+    assert res_ip_wildcard.result_count == 3
+
 
 def test_where_command(test_engine):
     res = test_engine.execute('index=main | where status >= 400')

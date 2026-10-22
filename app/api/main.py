@@ -72,7 +72,9 @@ async def lifespan(app: FastAPI):
         from forwarder.scripts.issue_certificates import ensure_ca_and_server_certs
         ensure_ca_and_server_certs(Path("forwarder/certs"))
 
-        rec_cfg_file = Path("forwarder/config/receiver.test.json")
+        rec_cfg_file = Path("forwarder/config/receiver.json")
+        if not rec_cfg_file.exists():
+            rec_cfg_file = Path("forwarder/config/receiver.test.json")
         if rec_cfg_file.exists():
             rec_cfg = ReceiverConfig.from_file(str(rec_cfg_file))
             rec_cfg.resolve_paths(Path("."))
